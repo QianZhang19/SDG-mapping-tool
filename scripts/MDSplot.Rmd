@@ -1,0 +1,47 @@
+---
+title: "MDSplot"
+author: "Qian"
+date: "26/09/2019"
+output: html_document
+---
+
+```{r}
+library(plotly)
+```
+
+
+```{r}
+# cosine_dist_mat <- as.matrix(dist(text_words_matrix), method = "cosine")
+# text_words_matrix <- read.csv("text_words_matrix.csv", row.names=1)
+# cmd1=cmdscale(cosine_dist_mat,3) #3D
+# 
+# p <- plot_ly(as.data.frame(cmd1), x = ~V1, y = ~V2, z = ~V3) %>%
+#   add_markers() %>%
+#   layout(scene = list(xaxis = list(title = '1'),
+#                       yaxis = list(title = '2'),
+#                       zaxis = list(title = '3')))
+# htmlwidgets::saveWidget(as_widget(p), "test.html")
+```
+
+
+```{r}
+#MDS plot
+text_words_matrix <- read.csv("text_words_matrix.csv", row.names=1)
+cosine_dist_mat <- as.matrix(dist(text_words_matrix), method = "euclidean")
+cmd1=cmdscale(cosine_dist_mat,3)
+cmd2 <- as.data.frame(cmd1)
+lengthofdata <- length(rownames(text_words_matrix))
+cmd2$group <- c(rep("A",times = 17),rep("B",times =lengthofdata - 17))
+
+library(plotly)
+p <- plot_ly(as.data.frame(cmd2), x = ~V1, y = ~V2, z = ~V3, color = ~group, text = rownames(cmd2)) %>%
+  add_markers() %>%
+#  add_text() %>%
+  layout(scene = list(xaxis = list(title = '1'),
+                      yaxis = list(title = '2'),
+                      zaxis = list(title = '3')))
+htmlwidgets::saveWidget(as_widget(p), "test.html")
+
+```
+
+

@@ -1,0 +1,115 @@
+---
+title: "classification(mean)"
+author: "Qian"
+date: "11/08/2019"
+output: html_document
+---
+
+# get library
+```{r}
+library(quanteda)
+library(tidyr)
+library(stringr)
+library(rword2vec)
+```
+
+# load document and cluster results
+```{r}
+# appoint header as "document" and "text"
+document <- read.delim("/Users/qianzhang/Desktop/casestudy_BD.txt", header=FALSE, col.names = c("document","text"))
+cluster <- read.csv("4.csv")
+```
+
+# merge the two 
+```{r}
+clu_doc <- merge(document, cluster, by="document", all=T)
+clu_doc[2] <- apply(clu_doc[2],2,as.character)
+clu_doc2 <- aggregate(clu_doc,by=list(clu_doc$cluster),c)
+colnames(clu_doc2)[1] <- "cluster"
+```
+
+#
+```{r}
+list <- clu_doc2[,3]
+i=1
+str <- list()
+for(i in 1:length(list)){
+  str[[i]] <- Reduce('paste0',list[[i]])
+}
+clu_doc3 <- gsub(" _ "," ",unlist(str))
+# remove repeat words(????)
+# clu_doc3 <- sapply(clu_doc3, function(x) paste(unique(unlist(str_split(x," "))), collapse = " "))
+write.table(clu_doc3,file="clu_doc.txt",sep="",row.names=F,col.names = F,quote = F)
+
+```
+
+# load the two doc
+```{r}
+sdg <- read.delim("case_study_keywords1.0.txt", header=FALSE, col.names = "text",stringsAsFactors = F)
+clu_doc4 <- read.delim("clu_doc.txt", header=FALSE, col.names = "text",stringsAsFactors = F)
+namesdg <- paste0("sdg",1:dim(sdg)[1])
+namecluster <- paste0("cluster", 1:dim(clu_doc4)[1])
+```
+
+
+# creat a matrix and get mean
+```{r}
+#combine sdg and cluster
+data <- rbind(sdg,clu_doc4)
+#dfm combination data
+corpdata <- corpus(data)
+dfmdata <- dfm(corpdata)
+meandata <- rowMeans(dfmdata)
+x <- meandata[1:dim(sdg)[1]]
+y <- meandata[(dim(sdg)[1]+1):dim(data)[1]]
+```
+
+# distance(euclidean)
+```{r}
+mean <- merge(x,y)
+dist <- abs(mean$x-mean$y)
+distance <- matrix(dist,nrow = length(x),ncol = length(y))
+colnames(distance) <- namecluster
+rownames(distance) <- namesdg
+#save the result
+#write.csv (distance, file ="mapping_results.csv")
+```
+
+# score
+```{r}
+d <- data.frame(sdg=rep(row.names(distance),ncol(distance)),
+                cluster=rep(colnames(distance),each=nrow(distance)),
+                distance=as.vector(distance))
+# quantile statistics
+aquantile <- quantile(distance)
+# set a score
+score <- 5
+#map data to score
+for (i in 1:score){
+  d$score[distance >= aquantile[i]] <- i
+}
+#save the result
+write.csv(d, file ="score.csv")
+```
+
+###############
+# rbind score and distance
+```{r}
+graded <- spread(d[,-3], cluster, score)
+rownames(distance) <- paste0("sdg",1:dim(sdg)[1],"_distance")
+grade <- graded[,-1]
+colnames(grade) <- paste0("cluster", 1:dim(clu_doc4)[1])
+rownames(grade) <- paste0(graded[,1],"_score")
+index <- paste0("sdg",1:dim(sdg)[1],"_score")
+grade <- grade[index,]
+# rbind
+cross <- rbind(distance,grade)
+index <- rbind(rownames(distance),rownames(grade))
+# order
+crossed <- cross[index,]
+#
+write.csv(crossed, file ="score+distance.csv")
+```
+
+
+

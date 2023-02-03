@@ -1,0 +1,242 @@
+---
+title: "naive Bayes"
+author: "Qian"
+date: "07/08/2019"
+output: html_document
+---
+## In this step, we creat a classifer
+# get library
+```{r}
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(e1071)
+library(klaR)
+library(caret)
+```
+
+# Creating a classify with SDG data
+```{r}
+sdg_raw <- read.delim("/Users/qianzhang/Desktop/sdg17.txt", header=FALSE, col.names = c("sdg","text"))
+```
+
+# transform to factor(1.2.3...)
+```{r}
+sdg_raw$sdg <- factor(sdg_raw$sdg)
+str(sdg_raw$sdg)
+table(sdg_raw$sdg)
+```
+
+## creation of a classify （frequency matrix ）
+# creating a volitile coprus with “text” vector from data frame
+```{r}
+sdg_corpus <- VCorpus(VectorSource(sdg_raw$text))
+print(sdg_corpus)
+```
+
+# clean the data
+```{r}
+sdg_corpus_clean <- tm_map(sdg_corpus, content_transformer(tolower))
+sdg_corpus_clean <- tm_map(sdg_corpus_clean, removeNumbers)
+sdg_corpus_clean <- tm_map(sdg_corpus_clean, removeWords, stopwords())
+sdg_corpus_clean <- tm_map(sdg_corpus_clean, removePunctuation)
+sdg_corpus_clean <- tm_map(sdg_corpus_clean, stripWhitespace)
+as.character(sdg_corpus_clean[[3]])
+sdg_corpus_clean <- tm_map(sdg_corpus_clean, stemDocument)
+```
+
+# tokenization
+```{r}
+sdg_dtm <- DocumentTermMatrix(sdg_corpus_clean)
+sdg_dtm_train <- sdg_dtm
+```
+
+# label
+```{r}
+sdg_classify_labels <- sdg_raw$sdg
+```
+
+# frequency of the words
+```{r}
+prop.table(table(sdg_classify_labels))
+wordcloud(sdg_corpus_clean, max.words = 50, random.order = FALSE)
+```
+
+# for every topics
+```{r}
+sdg1 <- subset(sdg_raw, sdg == "SDG1")
+wordcloud(sdg1$text, max.words = 50, random.order = FALSE)
+# wordcloud(sdg1, max.words = 50, random.order = FALSE)
+```
+
+# 
+```{r}
+# #Removing words from the matrix that appear less than 2 times.
+# sdg_freq_words <- findFreqTerms(sdg_dtm_train, 2)
+# str(sdg_freq_words)
+# 
+# #Dimension reduction
+# sdg_dtm_freq_train <- sdg_dtm_train[ , sdg_freq_words]
+```
+
+
+## convert the matrix to “yes” and “no” categorical variables
+```{r}
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, "Yes", "No")
+}
+sdg_classify <- apply(sdg_dtm_train, MARGIN = 2, convert_counts)
+```
+
+# Use the e1071 package to implement the Naive Bayes algorithm on the data
+```{r}
+sdg_classifier <- naiveBayes(sdg_classify, sdg_classify_labels)
+print(sdg_classifier)
+```
+
+
+
+#
+## In this step, we create a test set with each document
+```{r}
+test_raw <- read.delim("underpinning_part_stemming.txt", header=FALSE, col.names = c("test","text"))
+```
+
+# transform to factor(1.2.3...)
+```{r}
+test_raw$test <- factor(test_raw$test)
+str(test_raw$test)
+table(test_raw$test)
+```
+
+# creating a volitile coprus with “test” vector from data frame
+```{r}
+test_corpus <- VCorpus(VectorSource(test_raw$test))
+print(test_corpus)
+```
+
+# clean the data
+```{r}
+test_corpus_clean <- tm_map(test_corpus, content_transformer(tolower))
+test_corpus_clean <- tm_map(test_corpus_clean, removeNumbers)
+test_corpus_clean <- tm_map(test_corpus_clean, removeWords, stopwords())
+test_corpus_clean <- tm_map(test_corpus_clean, removePunctuation)
+test_corpus_clean <- tm_map(test_corpus_clean, stemDocument)
+test_corpus_clean <- tm_map(test_corpus_clean, stripWhitespace)
+as.character(test_corpus_clean[[3]])
+```
+
+# tokenization
+```{r}
+test_dtm <- DocumentTermMatrix(test_corpus_clean)
+docu_test <- test_dtm
+#label
+docu_test_labels <- test_raw$test
+```
+
+# convert the matrix to “yes” and “no” categorical variables
+```{r}
+convert_counts2 <- function(x) {
+  x <- ifelse(x > 0, "Yes", "No")
+}
+document_test <- apply(docu_test, MARGIN = 2, convert_counts2)
+```
+
+# mapping
+```{r}
+docu_test_map <- predict(sdg_classifier, document_test)
+```
+
+# save results
+```{r}
+testTable=table(docu_test_map, docu_test_labels)
+write.csv(testTable,"each of documents.csv")
+
+```
+
+#########################
+
+# document data loading
+```{r}
+document <- read.delim("underpinning_part_stemming.txt", header=FALSE, col.names = c("document","text"))
+```
+
+# cluster data loading
+```{r}
+cluster <- read.csv("documentkcluster.csv")
+```
+
+# merging the text by kmeans clusters, predict clusters
+```{r}
+merged <- merge(document,cluster,by="document",all=T)
+merged[2] = apply(merged[2],2,as.character)
+pred_raw <- aggregate(merged, by=list(merged$cluster), c)
+colnames(pred_raw)[1] <- "cluster"
+```
+
+# transform to factor(1.2.3...)
+```{r}
+pred_raw$cluster <- factor(pred_raw$cluster)
+str(pred_raw$cluster)
+table(pred_raw$cluster)
+```
+
+
+# creating a volitile coprus with “text” vector from data frame
+```{r}
+pred_corpus <- VCorpus(VectorSource(pred_raw$text))
+print(pred_corpus)
+```
+
+# clean the data train2
+```{r}
+pred_corpus_clean <- tm_map(pred_corpus, content_transformer(tolower))
+pred_corpus_clean <- tm_map(pred_corpus_clean, removeNumbers)
+pred_corpus_clean <- tm_map(pred_corpus_clean, removeWords, stopwords())
+pred_corpus_clean <- tm_map(pred_corpus_clean, removePunctuation)
+pred_corpus_clean <- tm_map(pred_corpus_clean, stemDocument)
+pred_corpus_clean <- tm_map(pred_corpus_clean, stripWhitespace)
+as.character(pred_corpus_clean[[3]])
+```
+
+# tokenization
+```{r}
+pred_dtm <- DocumentTermMatrix(pred_corpus_clean)
+cluster_pred <- pred_dtm
+#save vectors labeling rows
+cluster_pred_labels <- pred_raw$cluster
+```
+
+# convert the matrix to “yes” and “no” categorical variables
+```{r}
+convert_counts3 <- function(x) {
+  x <- ifelse(x > 0, "Yes", "No")
+}
+cluster_pred_map <- apply(cluster_pred, MARGIN = 2, convert_counts3)
+```
+
+# predict
+```{r}
+cluster_pred_pred <- predict(sdg_classifier, cluster_pred_map)
+```
+
+# save results
+```{r}
+predTable=table(cluster_pred_pred, cluster_pred_labels)
+write.csv(predTable,"cluster mapping.csv")
+#
+```
+
+
+```{r}
+# savehistory("myfile")
+# loadhistory("myfile")
+# save.image("myfile")
+# save(objectlist, file="myfile")
+```
+
+
+
+
+
+

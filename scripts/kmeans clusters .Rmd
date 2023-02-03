@@ -1,0 +1,300 @@
+---
+title: "case study summaries"
+author: "Qian"
+date: "2019/7/17"
+---
+
+# get library
+```{r}
+library(dplyr)
+library(tidytext)
+library(factoextra)
+library(amap)
+library(broom)
+library(purrr)
+library(ggplot2)
+library(wordcloud2)
+library(tibble)
+library(tidyr)
+library(gganimate)
+library(gifski)
+library(png)
+library(cluster)
+library(data.table)
+library(corrplot)
+library(fpc)
+library(webshot)
+library(htmlwidgets)
+library(clusterSim)
+library(animation)
+library(magick)
+library(rword2vec)
+library(text2vec)
+library(SnowballC)  
+library(NLP)
+library(tm) 
+library(proxy)
+# source("helper_functions.R")
+#setwd("/Users/qianzhang/Desktop")
+```
+
+# get data
+```{r}
+df <- read.csv("/Users/qianzhang/Desktop/casestudy_TD.txt", header=F, sep="\t", stringsAsFactors = F)
+colnames(df) <- c("line", "text")
+tdf <- tbl_df(df)
+# turn sentences into token
+text_df <- tdf %>% unnest_tokens(word, text)
+# get all unique words
+allWords <- unique(text_df$word)
+# get matrix
+get_matrix <- function(idxLine) {
+  tgt <- text_df %>% filter(line == idxLine)
+  line <- tgt$word
+  res <- allWords %in% line
+  ifelse(res, 1, 0)
+}
+lres <- lapply(1:nrow(tdf), get_matrix)
+matr_ <- do.call(rbind, lres)
+row.names(matr_) <- 1:nrow(tdf)
+colnames(matr_) <- allWords
+sum_row <- matrix(rowSums(matr_))
+sum_col <- matrix(colSums(matr_))
+```
+
+# get the matrix of the word and its rarity
+```{r}
+rarity_matr <- cbind(allWords,sum_col)
+colnames(rarity_matr) <- c('allwords','rarity')
+```
+
+#get the number of rarity when a doc have zero word
+```{r}
+i=1
+extra <- list()
+statsumcol <- sort(unique(sum_col))
+for(i in statsumcol){
+  extra[[i]] <- which(sum_col==i)
+}
+names(extra) <- seq_along(extra)
+extra[sapply(extra, is.null)] <- NULL
+
+i = 1
+repeat { 
+  i <- i+1
+  reduced_matr_ <- matr_ [,-unname(unlist(extra[as.character(statsumcol[c(1:i)])]))]
+  sum_row <- matrix(rowSums(reduced_matr_))
+  if(0 %in% sum_row) {
+    break
+  }
+}
+#reduced_matr_ <- matr_ [,-unname(unlist(extra[as.character(statsumcol[c(1:i-1)])]))]
+# removed_matr_ <- matr_ [,-unname(unlist(extra[as.character(statsumcol[6])]))]
+# removed_matr_ <- matr_ [,-unname(unlist(extra[as.character(statsumcol[c(6,7)])]))]
+reduced_matr_ <- matr_ [,-unname(unlist(extra[as.character(statsumcol[c(1:94)])]))]
+
+```
+
+#plot change
+```{r}
+i = 1
+countwords <- list()
+for(i in 1:length(statsumcol)){
+  plot_matr_ <- matr_[,-unname(unlist(extra[as.character(statsumcol[c(1:i)])]))]
+  countwords[[i]] <- dim(plot_matr_)[2]
+}
+countwords[sapply(countwords, is.null)] <- 1
+names(countwords) <- as.character(statsumcol)
+library(ggplot2)
+library(dplyr)
+plotDat <- stack(countwords) %>% 
+  mutate(WordFrequency = as.numeric(as.character(ind)),
+         Wordcounts = values)
+
+ggplot(plotDat, aes(x = WordFrequency, y = Wordcounts,)) +
+  geom_line()  + geom_vline(xintercept = 102)+ geom_vline(xintercept = 810, color="green")+ geom_vline(xintercept = 140,color="green") + theme(plot.subtitle = element_text(vjust = 1) , 
+    plot.caption = element_text(vjust = 1)) +labs(title = "The relationship between word frequency and word count - Case Study Big Data") 
+
+```
+
+# outliers processing
+```{r}
+sum_col_td <- sum_col[sum_col %in% c(102:810)]
+howmany <- table(sum_col_td)
+sum_fre <- sum(howmany)
+dataf <- merge(howmany,sum_fre)
+dataf$per <- dataf[,2]/dataf[,3]
+aquantile <- quantile(dataf[,4],probs = seq(0, 1, 0.1))
+#set a grade
+grade <- 10
+#map data to grade
+i = 1
+for (i in 1:grade){
+  dataf$grade[dataf[,4] >= aquantile[i]] <- i
+}
+dataf2 <- dataf[dataf$grade %in% c(2:7),]
+# outlier_reduced <- matr_[,-unname(unlist(extra[as.character(dataf2$sum_col_td)]))]
+```
+
+
+
+
+# high rarity
+```{r}
+statsumcol2 <- sort(unique(sum_col),decreasing = TRUE)
+reduced_matr_2 <- reduced_matr_ [,-unname(unlist(extra[as.character(statsumcol2[c(1:140)])]))]
+#reduced_matr_ <- reduced_matr_ [,-unname(unlist(extra[as.character(c(1154,996,730,717))]))]
+```
+
+
+# define a k
+# optimal number of clusters
+# elbow method
+# high similarity no too much steep
+```{r}
+fviz_nbclust(reduced_matr_2, kmeans, method = "wss")+labs(subtitle = "Case Study Big Data (Before Dimensional Reduction)") 
+# + geom_vline(xintercept = 6, linetype = 2)
+```
+
+# results in wss
+```{r}
+# n_clust<-fviz_nbclust(reduced_matr_, kmeans, method = "wss",k.max = 10)
+# n_clust<-n_clust$data
+```
+
+## kmeans with loop
+```{r}
+# set learning rate
+# i=1
+# a <- rep(0,500)
+# km.res <- list()
+# km_stats <- list()
+# 
+# # training it
+# for(i in 1:500){
+# km.res[[i]] <- Kmeans(reduced_matr_, 7, method = "euclidean")
+# km_stats[[i]] <- cluster.stats(dist(reduced_matr_),km.res[[i]]$cluster)
+# a[i] <- km_stats[[i]]$dunn
+# }
+# max(a)
+# dunn_index = which(a == max(a))
+# km.res <- km.res[[dunn_index]]
+# clusterdf <- cbind(cluster = km.res$cluster,reduced_matr_)
+
+# #
+# clusterdf2 <- setDT(as.data.frame(clusterdf),keep.rownames = F,key=NULL,check.names=FALSE)[]
+# document <-c(1:dim(clusterdf2)[1])
+# #document <- clusterdf2$rn
+# cluster = clusterdf2$cluster
+# data <- data.frame(document,cluster)
+# write.csv(data,"sco_paper.csv",sep=",",row.names=F,quote=F)
+# #
+
+
+# #
+# clusterdf2 <- setDT(as.data.frame(clusterdf),keep.rownames = TRUE)[]
+# document = clusterdf2$rn
+# cluster = clusterdf2$cluster
+# data <- data.frame(document,cluster)
+# write.csv(data,"data.csv",sep=",",row.names=F,quote=F)
+# #
+
+# plot
+# fviz_cluster(km.res, data = reduced_matr_,
+#              geom = "point",
+#              shape = 16,
+#              palette = "jco",
+#              ellipse.type = F,
+#              ggtheme = theme_minimal()
+# )
+# dunn_index
+```
+
+
+## kmeans without loop
+```{r}
+km.res <- Kmeans(matr_, 4, method = "correlation")
+clusterdf <- cbind(cluster = km.res$cluster,matr_)
+# #
+# #
+clusterdf2 <- setDT(as.data.frame(clusterdf),keep.rownames = F,key=NULL,check.names=FALSE)[]
+document <-c(1:dim(clusterdf2)[1])
+#document <- clusterdf2$rn
+cluster = clusterdf2$cluster
+data <- data.frame(document,cluster)
+write.csv(data,"4.csv",sep=",",row.names=F,quote=F)
+# #
+# #
+fviz_cluster(km.res, data = matr_,
+             geom = "point",
+             shape = 16,
+             palette = "jco",
+             ellipse.type = F,
+             ggtheme = theme_minimal()
+)+labs(title = "4 clusters with correlation distance measurement")
+
+
+km_stats <- cluster.stats(dist(matr_),km.res$cluster)
+km_stats$dunn
+
+
+db <- index.DB(matr_, km.res$cluster, d=NULL, centrotypes = "centroids",p=2,q=2)
+db$DB
+```
+
+# cosine distance
+```{r}
+# cosdist <- proxy::dist(reduced_matr_2, method = "cosine")
+# coskmeans <- kmeans(cosdist, 4)
+# fviz_cluster(coskmeans, data = cosdist,
+#              geom = "point",
+#              shape = 16,
+#              palette = "jco",
+#              ellipse.type = F,
+#              ggtheme = theme_minimal()
+# )+labs(title = "4 clusters with cosine distance measurement")
+# 
+# 
+# km_stats <- cluster.stats(dist(reduced_matr_2),coskmeans$cluster)
+# km_stats$dunn
+# 
+# 
+# db <- index.DB(reduced_matr_2, coskmeans$cluster, d=NULL, centrotypes = "centroids",p=2,q=2)
+# db$DB
+
+```
+
+
+
+
+# each cluster (row)
+```{r}
+clusterdf <- as.data.frame(clusterdf)
+cluster_num1 <- clusterdf[which(clusterdf$cluster=="1"), ]
+cluster_num2 <- clusterdf[which(clusterdf$cluster=="2"), ]
+cluster_num3 <- clusterdf[which(clusterdf$cluster=="3"), ]
+```
+
+```{r}
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num3,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[50:100]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+
+```
+
+
+# save wordscloud2 pic
+```{r}
+# my_graph=wordcloud2(data = data.frame(words, frequency), gridSize=15, ellipticity=2)
+# saveWidget(my_graph,"tmp.html",selfcontained = F)
+# webshot("tmp.html","fig_1.pdf", delay =5, vwidth = 480, vheight=480)
+```
+
+
+
+

@@ -1,0 +1,257 @@
+---
+title: "DTM-tfidf"
+author: "Qian"
+date: "20/07/2019"
+output: html_document
+---
+
+```{r}
+library(tidytext)
+library(tm)
+library(factoextra)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(purrr)
+library(ggplot2)
+library(wordcloud2)
+library(tibble)
+library(tidyr)
+library(gganimate)
+library(gifski)
+library(png)
+library(cluster)
+library(corrplot)
+library(fpc)
+setwd("/Users/qianzhang/Desktop")
+```
+
+# import data
+```{r}
+df <- read.table("/Users/qianzhang/Desktop/sco_paperclean.txt", header=F, sep="\t", stringsAsFactors = F)
+colnames(df) <- c("doc_id", "text")
+```
+
+
+# creat a corpus format for TermDocumentMatrix
+```{r}
+mycorpus <- Corpus(DataframeSource(df))
+
+```
+
+# DTM Forming, weighttfidf, normalise
+```{r}
+tdm <- TermDocumentMatrix(mycorpus)
+matri_tdm <- as.matrix(tdm)
+matri_tdm1 <- t(matri_tdm)
+m2 <- apply(matri_tdm1, 2, innp <- function(x) {
+     return (x / sqrt(sum(x^2)))
+ })
+# matri_tdm2 <- scale(matri_tdm1,scale=TRUE)
+write.csv(m2,file="DTM(publications).csv")
+```
+
+##################################################################################################
+
+# define a k
+# optimal number of clusters
+# elbow method
+```{r}
+fviz_nbclust(as.matrix(tdm), kmeans, method = "wss")+labs(subtitle = "Elbow method")+ geom_vline(xintercept = 9, linetype = 2)
+```
+
+# silhouette method
+```{r}
+# fviz_nbclust(as.matrix(tdm), kmeans, method = "silhouette")+labs(subtitle = "Silhouette method")
+# + geom_vline(xintercept = 4, linetype = 2)
+```
+
+# Gap statistic
+# nboot = 50 to keep the function speedy. 
+# recommended value: nboot= 500 for your analysis.
+# Use verbose = FALSE to hide computing progression.
+```{r}
+# set.seed(123)
+# fviz_nbclust(as.matrix(tdm), kmeans, nstart = 25,  method = "gap_stat", nboot = 50)+labs(subtitle = "Gap statistic method")
+```
+
+##################################################################################################
+
+# kmeans
+```{r}
+km.res <- kmeans(as.matrix(tdm), 9)
+```
+
+#df2 <- as.matrix(tdm)
+#
+##a datafram hava cluster type
+# clusterdf <- aggregate(dtm, by=list(cluster=km.res$cluster), mean)
+```{r}
+dtm <- as.matrix(tdm)
+clusterdf <- cbind(dtm, cluster = km.res$cluster)
+# head(clusterdf)
+```
+
+```{r}
+clusterdf <- as.data.frame(clusterdf)
+cluster1 <- clusterdf[which(clusterdf$cluster=="7"), ]
+```
+
+# plot
+```{r}
+fviz_cluster(km.res, data = as.matrix(tdm),
+             geom = "point",
+             shape = 16,
+             palette = "jco",
+             ellipse.type = F, 
+             ggtheme = theme_minimal()
+)
+```
+
+#################################################################################################
+
+# clustering validation
+# silhouette method
+```{r}
+# km.res <- eclust(reduced_t_matr_,"kmeans",k=9,nstart=25,graph=FALSE)
+# fvi_silhouette(km.res,palette="jco",ggtheme = theme_classic())
+```
+
+# The corrected Rand index provides a measure for assessing the similarity between two partitions, adjusted for chance. Its range is -1(no agreement) to 1(perfect agreement)
+```{r}
+# words <- as.numeric(factor(rownames(reduced_t_matr_)))
+# clust_stats <- cluster.stats(d=dist(reduced_t_matr_),words,km.res$cluster)
+# Corrected Rand index
+# clust_stats$corrected.rand
+# clust_stats$vi
+```
+
+# dunn (not good)
+```{r}
+km_stats <- cluster.stats(dist(as.matrix(tdm)),km.res$cluster)
+km_stats$dunn
+```
+
+# dbi
+```{r}
+
+```
+
+
+
+
+#################################################################################################
+
+
+
+# wordcloud
+# each cluster (row)
+```{r}
+# clusterdf <- as.data.frame(clusterdf)
+# cluster1 <- clusterdf[which(clusterdf$cluster=="9"), ]
+```
+
+# each cluster (col)
+```{r}
+# clusterdf <- as.data.frame(clusterdf)
+# cluster1 <- clusterdf[which(clusterdf$cluster=="1"), ]
+```
+
+
+# plot wordscloud2
+```{r}
+# require(devtools)
+# install_github("lchiffon/wordcloud2")
+# frequency <- rowSums(cluster1)
+# frequency <- sort(frequency, decreasing=TRUE)
+# words <- names(frequency)
+# words[1:10]
+# wordcloud2(data = data.frame(words, frequency), gridSize=15, ellipticity=2)
+```
+
+
+##################################################################################################
+
+
+# plot animate
+# calculate the distances
+```{r}
+d=dist(as.matrix(tdm), method = "euclidean") # euclidean distances between the rows
+fit=cmdscale(d,eig=TRUE, k=2) # k is the number of dim
+points <- tibble(
+  x1 = fit$points[,1],
+  x2 = fit$points[,2]
+)
+kclust <- kmeans(points, centers = 3)
+kclust
+```
+
+```{r}
+summary(kclust)
+```
+
+```{r}
+augment(kclust, points)
+```
+
+```{r}
+tidy(kclust)
+```
+
+```{r}
+glance(kclust)
+```
+
+```{r}
+kclusts <- tibble(k = 1:9) %>%
+  mutate(
+    kclust = map(k, ~kmeans(points, .x)),
+    tidied = map(kclust, tidy),
+    glanced = map(kclust, glance),
+    augmented = map(kclust, augment, points)
+  )
+
+kclusts
+
+clusters <- kclusts %>%
+  unnest(tidied)
+
+assignments <- kclusts %>% 
+  unnest(augmented)
+
+clusterings <- kclusts %>%
+  unnest(glanced, .drop = TRUE)
+```
+
+```{r}
+pic_sep <- ggplot(assignments, aes(x1, x2)) +
+  geom_point(aes(color = .cluster)) + 
+  scale_y_reverse() +
+  scale_x_reverse() +
+  facet_wrap(~ k)
+pic_sep
+
+```
+
+
+```{r}
+theme_set(theme_bw())
+```
+
+```{r}
+iter_ <- ggplot(assignments, aes(x1, x2)) +
+  geom_point(aes(color = .cluster), size=5) + 
+  scale_y_reverse() +
+  scale_x_reverse()
+iter_ + transition_time(k) +
+  labs(title = "cluster: {frame_time}")+
+  shadow_wake(wake_length = 0.08, alpha = FALSE)
+```
+
+
+
+
+
+
+
+

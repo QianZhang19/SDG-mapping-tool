@@ -1,0 +1,68 @@
+---
+title: "dtm"
+author: "Qian"
+date: "28/08/2019"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(tidytext)
+library(factoextra)
+library(broom)
+library(tibble)
+library(tidyr)
+library(gganimate)
+library(gifski)
+library(png)
+library(cluster)
+library(data.table)
+library(corrplot)
+library(fpc)
+library(webshot)
+library(htmlwidgets)
+library(clusterSim)
+library(animation)
+library(magick)
+library(rword2vec)
+library(text2vec)
+library(SnowballC)  
+library(NLP)
+library(tm) 
+# source("helper_functions.R")
+setwd("/Users/qianzhang/Desktop")
+df <- read.csv("/Users/qianzhang/Desktop/sco_paperclean.txt", header=F, sep="\t", stringsAsFactors = F)
+colnames(df) <- c("line", "text")
+tdf <- tbl_df(df)
+# turn sentences into token
+text_df <- tdf %>% unnest_tokens(word, text)
+# get all unique words
+allWords <- unique(text_df$word)
+# get matrix
+get_matrix <- function(idxLine) {
+  tgt <- text_df %>% filter(line == idxLine)
+  line <- tgt$word
+  res <- allWords %in% line
+  ifelse(res, 1, 0)
+}
+lres <- lapply(1:nrow(tdf), get_matrix)
+matr_ <- do.call(rbind, lres)
+row.names(matr_) <- 1:nrow(tdf)
+colnames(matr_) <- allWords
+
+# write.table(matr_,file = "matr_.txt",sep="\t",row.names = F,quote = F)
+
+sum_row <- matrix(rowSums(matr_))
+sum_col <- matrix(colSums(matr_))
+
+rarity_matr <- cbind(allWords,sum_col)
+colnames(rarity_matr) <- c('allwords','rarity')
+once <- which(sum_col==1)
+twice <- which(sum_col==2)
+sel_words <- allWords[c(once,twice)]
+
+reduced_matr_ <- matr_[,-once]
+
+reduced_matr_df <- as.data.frame(reduced_matr_)
+```
+

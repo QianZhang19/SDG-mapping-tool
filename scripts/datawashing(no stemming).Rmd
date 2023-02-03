@@ -1,0 +1,96 @@
+---
+title: "Step1: DATA WASHING"
+author: "Qian"
+date: "09/07/2019"
+output: html_document
+---
+
+
+# get library
+```{r}
+library(dplyr)
+library(tidytext)
+library(stringr)
+library(pacman)
+data(stop_words)
+setwd("/Users/qianzhang/Desktop")
+```
+
+# get the original data
+```{r}
+df <- read.csv("/Users/qianzhang/Desktop/publication_hierarchy.txt", header=F, sep="\t", stringsAsFactors = F)
+tdf <- tibble(line=1:nrow(df), text=df$V1)
+```
+
+# split sentences into token
+```{r}
+text_df <- tdf %>% unnest_tokens(word, text)
+# write.table(text_df,"hw1.txt",row.names = F, sep = "\t",col.names = F)
+```
+
+# data washing
+## remove the punctuation
+```{r}
+punc_words <- tibble(word=c("{", "}", "(", ")", "[", "]", ".",
+                            "|", "&", "*", "/", "//", "#", "\\",
+                            "~", ",", ":", ";", "?", "!", "\"",
+                            "-", "--", "...", "||", "&&"))
+text_cm <- text_df %>% anti_join(punc_words)
+```
+
+
+
+## run stop_words
+```{r}
+text_sw <- text_cm %>% anti_join(stop_words)
+# text_re <- text_sw %>% group_by(line) %>% 
+#   summarise(text=paste(word, collapse=" "))
+# write.table(text_re, "good.txt", row.names=F, sep="\t", col.names=F)
+```
+
+## remove the numbers
+```{r}
+text_sw$word <- str_replace_all(text_sw$word, "[\\d.,-]+", "")
+text_sw_dg <- text_sw %>% filter(word != "")
+```
+
+## turn uppercase into lowercase
+```{r}
+text_sw_dg$word <- str_to_lower(text_sw_dg$word)
+```
+
+## transfer token into sentence
+```{r}
+text_res <- text_sw_dg %>% group_by(line) %>% 
+  summarise(text=paste(word, collapse=" "))
+```
+
+# stemming
+```{r}
+# #if (!require("pacman")) install.packages("pacman")
+# pacman::p_load(textstem, dplyr)
+# #text_res[["text"]] <- stem_strings(text_res$text)
+# text_res[["text"]] <- lemmatize_strings(text_res$text)
+```
+
+# high frequency words
+```{r}
+# colnames(text_res) <- c("line", "text")
+# text_res_tdf <- tbl_df(text_res)
+# text_res_df <- text_res_tdf %>% unnest_tokens(word, text)
+# word_frequency <- as.data.frame(table(text_res_df))
+# a <- word_frequency[order(word_frequency[,3],decreasing=T),]
+# write.table(a[,2],"hw1.txt",row.names = F, sep = "\t",col.names = F)
+```
+
+## save as .txt
+```{r}
+write.table(text_res, "publication_hierarchy(ns).txt", row.names=F, sep="\t", col.names=F)
+```
+
+
+
+
+
+
+

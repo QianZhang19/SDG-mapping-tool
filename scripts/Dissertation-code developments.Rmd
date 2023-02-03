@@ -1,0 +1,259 @@
+---
+title: "Dissertation-code development"
+author: "Qian"
+date: "05/09/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# In this part, washing the original data
+```{r}
+library(dplyr)
+library(tidytext)
+library(stringr)
+library(pacman)
+library(factoextra)
+library(amap)
+library(broom)
+library(purrr)
+library(ggplot2)
+library(wordcloud2)
+library(tibble)
+library(tidyr)
+library(gganimate)
+library(gifski)
+library(png)
+library(cluster)
+library(data.table)
+library(corrplot)
+library(fpc)
+library(webshot)
+library(htmlwidgets)
+library(clusterSim)
+library(animation)
+library(magick)
+library(SnowballC)  
+library(NLP)
+library(tm) 
+library(quanteda)
+data(stop_words)
+setwd("/Users/qianzhang/Desktop")
+
+# get the original data
+df <- read.csv("/Users/qianzhang/Desktop/Scopus_origidata.txt", header=F, sep="\t", stringsAsFactors = F)
+tdf <- tibble(line=1:nrow(df), text=df$V1)
+
+# split sentences into token
+text_df <- tdf %>% unnest_tokens(word, text)
+
+# remove the punctuation
+punc_words <- tibble(word=c("{", "}", "(", ")", "[", "]", ".",
+                            "|", "&", "*", "/", "//", "#", "\\",
+                            "~", ",", ":", ";", "?", "!", "\"",
+                            "-", "--", "...", "||", "&&"))
+text_cm <- text_df %>% anti_join(punc_words)
+
+# remove stop_words
+text_sw <- text_cm %>% anti_join(stop_words)
+
+# remove the numbers
+text_sw$word <- str_replace_all(text_sw$word, "[\\d.,-]+", "")
+text_sw_dg <- text_sw %>% filter(word != "")
+
+# turn uppercase into lowercase
+text_sw_dg$word <- str_to_lower(text_sw_dg$word)
+
+# transfer token into sentence
+text_res <- text_sw_dg %>% group_by(line) %>% 
+  summarise(text=paste(word, collapse=" "))
+
+# save as .txt
+# write.table(text_res, "publication_hierarchy(ns).txt", row.names=F, sep="\t", col.names=F)
+```
+
+# This part is to do word presentation and dimensional reduction
+```{r}
+# get data
+df <- read.csv("/Users/qianzhang/Desktop/publication.txt", header=F, sep="\t", stringsAsFactors = F)
+colnames(df) <- c("line", "text")
+tdf <- tbl_df(df)
+# turn sentences into token
+text_df <- tdf %>% unnest_tokens(word, text)
+# get all unique words
+allWords <- unique(text_df$word)
+# get matrix
+get_matrix <- function(idxLine) {
+  tgt <- text_df %>% filter(line == idxLine)
+  line <- tgt$word
+  res <- allWords %in% line
+  ifelse(res, 1, 0)
+}
+lres <- lapply(1:nrow(tdf), get_matrix)
+matr_ <- do.call(rbind, lres)
+row.names(matr_) <- 1:nrow(tdf)
+colnames(matr_) <- allWords
+sum_row <- matrix(rowSums(matr_))
+sum_col <- matrix(colSums(matr_))
+
+# get the matrix of the word and its rarity
+rarity_matr <- cbind(allWords,sum_col)
+colnames(rarity_matr) <- c('allwords','rarity')
+
+# get the boundry of the low rarity and the high rarity
+i=1
+extra <- list()
+statsumcol <- sort(unique(sum_col))
+for(i in statsumcol){
+  extra[[i]] <- which(sum_col==i)
+}
+names(extra) <- seq_along(extra)
+extra[sapply(extra, is.null)] <- NULL
+
+i = 1
+repeat { 
+  i <- i+1
+  reduced_matr_ <- matr_ [,-unname(unlist(extra[as.character(statsumcol[c(1:i)])]))]
+  sum_row <- matrix(rowSums(reduced_matr_))
+  if(0 %in% sum_row) {
+    break
+  }
+}
+reduced_matr_ <- matr_ [,-unname(unlist(extra[as.character(statsumcol[c(1:i-1)])]))]
+
+# get the threshold
+statsumcol2 <- sort(unique(sum_col),decreasing = TRUE)
+reduced_matr_2 <- reduced_matr_ [,-unname(unlist(extra[as.character(statsumcol2[c(1:337)])]))]
+```
+
+# In this part, K-means model applying
+```{r}
+# choose a K value
+fviz_nbclust(reduced_matr_, kmeans, method = "wss")+labs(subtitle = "publication (Elbow method)")
+
+# kmeans algorithm applying with various distance measurement
+km.res <- Kmeans(reduced_matr_, 3, method = "euclidean")
+clusterdf <- cbind(cluster = km.res$cluster,reduced_matr_)
+
+# write csv. form for k-means cluster result
+clusterdf2 <- setDT(as.data.frame(clusterdf),keep.rownames = F,key=NULL,check.names=FALSE)[]
+document <-c(1:dim(clusterdf2)[1])
+cluster = clusterdf2$cluster
+data <- data.frame(document,cluster)
+write.csv(data,"4.csv",sep=",",row.names=F,quote=F)
+
+# 2D plot
+fviz_cluster(km.res, data = reduced_matr_,
+             geom = "point",
+             shape = 16,
+             palette = "jco",
+             ellipse.type = F,
+             ggtheme = theme_minimal()
+)+labs(title = "4 clusters with Euclidean distance measurement")
+
+# dunn index to do validity
+km_stats <- cluster.stats(dist(reduced_matr_),km.res$cluster)
+km_stats$dunn
+
+# dbi index to do validity
+db <- index.DB(reduced_matr_, km.res$cluster, d=NULL, centrotypes = "centroids",p=2,q=2)
+db$DB
+```
+
+# This part is to get the high frequency words in each cluster
+```{r}
+# Documents in each cluster
+clusterdf <- as.data.frame(clusterdf)
+cluster_num1 <- clusterdf[which(clusterdf$cluster=="1"), ]
+cluster_num2 <- clusterdf[which(clusterdf$cluster=="2"), ]
+cluster_num3 <- clusterdf[which(clusterdf$cluster=="3"), ]
+
+# get the first 50 frequency words decreasingly
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num3,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[1:50]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+```
+
+# In this part, mapping each cluster to each SDGs
+```{r}
+# load data document and cluster results and appoint header as "document" and "text"
+document <- read.delim("/Users/qianzhang/Desktop/casestudy_BD.txt", header=FALSE, col.names = c("document","text"))
+cluster <- read.csv("4.csv")
+
+# merge the two 
+clu_doc <- merge(document, cluster, by="document", all=T)
+clu_doc[2] <- apply(clu_doc[2],2,as.character)
+clu_doc2 <- aggregate(clu_doc,by=list(clu_doc$cluster),c)
+colnames(clu_doc2)[1] <- "cluster"
+list <- clu_doc2[,3]
+i=1
+str <- list()
+for(i in 1:length(list)){
+  str[[i]] <- Reduce('paste0',list[[i]])
+}
+clu_doc3 <- gsub(" _ "," ",unlist(str))
+
+# get the merge version
+write.table(clu_doc3,file="clu_doc.txt",sep="",row.names=F,col.names = F,quote = F)
+
+# load the merge version and labeled 17SDGs
+sdg <- read.delim("case_study_keywords1.0.txt", header=FALSE, col.names = "text",stringsAsFactors = F)
+clu_doc4 <- read.delim("clu_doc.txt", header=FALSE, col.names = "text",stringsAsFactors = F)
+namesdg <- paste0("sdg",1:dim(sdg)[1])
+namecluster <- paste0("cluster", 1:dim(clu_doc4)[1])
+
+# combine sdg and cluster
+data <- rbind(sdg,clu_doc4)
+
+# create a matrix and get the mean value of each cluster and each SDG
+corpdata <- corpus(data)
+dfmdata <- dfm(corpdata)
+meandata <- rowMeans(dfmdata)
+x <- meandata[1:dim(sdg)[1]]
+y <- meandata[(dim(sdg)[1]+1):dim(data)[1]]
+
+# eculidean distance measurement between each cluster and each SDG
+mean <- merge(x,y)
+dist <- abs(mean$x-mean$y)
+distance <- matrix(dist,nrow = length(x),ncol = length(y))
+colnames(distance) <- namecluster
+rownames(distance) <- namesdg
+
+# create a score for mapping result
+d <- data.frame(sdg=rep(row.names(distance),ncol(distance)),
+                cluster=rep(colnames(distance),each=nrow(distance)),
+                distance=as.vector(distance))
+
+# quantile statistics principle
+aquantile <- quantile(distance)
+score <- 5
+# map data to score
+for (i in 1:score){
+  d$score[distance >= aquantile[i]] <- i
+}
+
+# rbind score and distance
+graded <- spread(d[,-3], cluster, score)
+rownames(distance) <- paste0("sdg",1:dim(sdg)[1])
+grade <- graded[,-1]
+colnames(grade) <- paste0("cluster", 1:dim(clu_doc4)[1])
+rownames(grade) <- paste0(graded[,1])
+index <- paste0("sdg",1:dim(sdg)[1])
+grade <- grade[index,]
+cross <- rbind(distance,grade)
+index <- rbind(rownames(distance),rownames(grade))
+
+# order it 
+crossed <- cross[index,]
+
+# write the result
+# write.csv(crossed, file ="score+distance.csv")
+```
+
+
+

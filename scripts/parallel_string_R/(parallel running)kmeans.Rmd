@@ -1,0 +1,395 @@
+---
+title: "words_representation(matrix)"
+author: '123'
+date: "2019/7/17"
+output: word_document
+---
+# get library
+```{r}
+library(dplyr)
+library(tidytext)
+library(factoextra)
+library(broom)
+library(purrr)
+library(ggplot2)
+library(wordcloud2)
+library(tibble)
+library(tidyr)
+library(gganimate)
+library(gifski)
+library(png)
+library(cluster)
+library(data.table)
+library(corrplot)
+library(fpc)
+library(webshot)
+library(htmlwidgets)
+library(clusterSim)
+library(knotR)
+library(animation)
+library(magick)
+library(parallelDist) 
+library(doParallel)
+library(foreach)
+setwd("/Users/qianzhang/Desktop")
+```
+
+# get data
+```{r}
+df <- read.csv("/Users/qianzhang/Desktop/sco_paper.txt", header=F, sep="\t", stringsAsFactors = F)
+colnames(df) <- c("line", "text")
+tdf <- tbl_df(df)
+
+```
+
+# turn sentences into token
+```{r}
+text_df <- tdf %>% unnest_tokens(word, text)
+
+```
+
+# get all unique words
+```{r}
+allWords <- unique(text_df$word)
+
+```
+
+# get matrix
+```{r}
+get_matrix <- function(idxLine) {
+  tgt <- text_df %>% filter(line == idxLine)
+  line <- tgt$word
+  res <- allWords %in% line
+  ifelse(res, 1, 0)
+}
+lres <- lapply(1:nrow(tdf), get_matrix)
+matr_ <- do.call(rbind, lres)
+row.names(matr_) <- 1:nrow(tdf)
+colnames(matr_) <- allWords
+
+```
+
+## removed noises
+```{r}
+# delete_boring_cols <- which(colnames(matr_)  %in% c("s","ii","iii","m","th","k"))
+# remove_boring_words_matr <- matr_[,-delete_boring_cols]
+```
+
+# matrix output
+```{r}
+# write.table(remove_boring_words_matr,file = "remove_boring_words_matr.txt",sep="\t",row.names = F,quote = F)
+```
+
+# sum of rows and cols
+```{r}
+sum_row <- matrix(rowSums(matr_))
+sum_col <- matrix(colSums(matr_))
+# a <- colSums(sum_col)
+```
+
+##################################################################################################
+
+# get the matrix of the word and its rarity
+```{r}
+rarity_matr <- cbind(allWords,sum_col)
+colnames(rarity_matr) <- c('allwords','rarity')
+once <- which(sum_col==1)
+twice <- which(sum_col==2)
+sel_words <- allWords[c(once,twice)]
+# allWords[twice]
+# third <- which(sum_col==3)
+# allWords[third]
+# fourth <- which(sum_col==4)
+# allWords[fourth]
+# fifth <- which(sum_col==5)
+# allWords[fifth]
+# sixth <- which(sum_col==6)
+# allWords[sixth]
+# seventh <- which(sum_col==7)
+# allWords[seventh]
+# eighth <- which(sum_col==8)
+# allWords[eighth]
+# ninth <- which(sum_col==9)
+# allWords[ninth]
+# tenth <- which(sum_col==10)
+# allWords[tenth]
+# once_ <- which(sum_col==11)
+# allWords[once_]
+# twice_ <- which(sum_col==12)
+# allWords[twice_]
+# third_ <- which(sum_col==13)
+# allWords[third_]
+
+```
+
+# matrix after reduce
+```{r}
+reduced_matr_ <- matr_[,-once]
+```
+
+# plot for dimension reduces
+```{r}
+mytable <- data.frame(table(rarity_matr[,2]))
+# View(mytable)
+mytable <- transform(mytable, cumFreq = cumsum(Freq))
+ggplot(mytable,aes(x=Var1,y=cumFreq))+geom_point()+labs(x='Rarity of Word',y='No of Terms')
+```
+
+# In this part,export the 'reduced_matr_'
+```{r}
+# write.csv(reduced_matr_,file="reduced matrix for case study.csv")
+```
+
+# define a k
+# optimal number of clusters
+# elbow method
+？？？？？？？
+```{r}
+# fviz_nbclust(reduced_matr_, kmeans, method = "wss") 
+```
+？？？？？？
+
+```{r}
+my_data <- reduced_matr_
+# Within Sum of Squares
+wss <- (nrow(my_data)-1)*sum(apply(my_data,2,var))
+
+# Number of clusters
+try_clusters <- 1:15
+
+# Calculate the number of cpu cores
+no_cores <- detectCores()
+
+# Initiate cluster
+cl <- makeCluster(no_cores)
+registerDoParallel(cl)
+
+start.time <- Sys.time();
+# Calculating WSS for each cluster size in parallel
+wss_results <- foreach::foreach (i = try_clusters) %dopar% {
+  sum(kmeans(my_data, centers=i, iter.max = 1000)$withinss)
+}
+
+# Stop Clusters
+stopCluster(cl)
+end.time <- Sys.time();
+end.time - start.time
+
+# Plot WSS results
+plot(try_clusters, unlist(wss_results), type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+```
+
+```{r}
+##run in parallel
+dist <- parDist(reduced_matr_)
+times <- 500
+# Calculate the number of cpu cores
+no_cores <- detectCores() # -1
+
+# Initiate cluster
+cl <- makeCluster(no_cores)
+registerDoParallel(cl)
+
+start.time <- Sys.time();
+# Calculating WSS for each cluster size in parallel
+km.res <- foreach::foreach (i=1:times) %dopar% {
+  km.res[[i]] <- kmeans(reduced_matr_, 6)
+}
+km_stats <- foreach::foreach (i=1:times) %dopar% {
+  km_stats[[i]] <- fpc::cluster.stats(dist,km.res[[i]]$cluster)
+}
+a <- foreach::foreach (i=1:times) %dopar% {
+  a[i] <- km_stats[[i]]$dunn
+}
+# Stop Clusters
+stopCluster(cl)
+end.time <- Sys.time();
+time <- end.time-start.time
+ma <- max(unlist(a))
+dunn_index = which(a == max(unlist(a))) 
+km.res <- km.res[[dunn_index]]
+clusterdf <- cbind(reduced_matr_, cluster = km.res$cluster)
+```
+
+
+
+## kmeans
+```{r}
+# # set learning rate
+# i=1
+# a <- rep(0,500)
+# km.res <- list()
+# km_stats <- list()
+# 
+# # training it 
+# for(i in 1:500){
+# km.res[[i]] <- kmeans(reduced_matr_, 6)
+# km_stats[[i]] <- cluster.stats(dist(reduced_matr_),km.res[[i]]$cluster)
+# a[i] <- km_stats[[i]]$dunn
+# }
+# max(a)
+# dunn_index = which(a == max(a)) 
+# km.res <- km.res[[dunn_index]]
+# clusterdf <- cbind(reduced_matr_, cluster = km.res$cluster)
+
+#
+clusterdf2 <- setDT(as.data.frame(clusterdf),keep.rownames = TRUE)[]
+document = clusterdf2$rn
+cluster = clusterdf2$cluster
+data <- data.frame(document,cluster)
+write.csv(data,"data.csv",sep=",",row.names=F,quote=F)
+#
+
+# plot
+fviz_cluster(km.res, data = reduced_matr_,
+             geom = "point",
+             shape = 16,
+             palette = "jco",
+             ellipse.type = F, 
+             ggtheme = theme_minimal()
+)
+dunn_index
+```
+
+# no parallel
+```{r}
+# km.res <- kmeans(reduced_matr_, 6)
+# clusterdf <- cbind(reduced_matr_, cluster = km.res$cluster)
+# fviz_cluster(km.res, data = reduced_matr_,
+#              geom = "point",
+#              shape = 16,
+#              palette = "jco",
+#              ellipse.type = F, 
+#              ggtheme = theme_minimal()
+# )
+# 
+# # dunn index
+# km_stats <- cluster.stats(dist(reduced_matr_),km.res$cluster)
+# km_stats$dunn
+```
+
+
+# dbi(smaller is better)
+# (p=1 - Manhattan distance; p=2 - Euclidean distance)
+# (q=1 - the average distance of objects in the r-th cluster to the centroid or medoid of the r-th cluster; q=2 - the standard deviation of the distance of objects in the r-th cluster to the centroid or medoid of the r-th cluster)
+```{r}
+db <- index.DB(reduced_matr_, km.res$cluster, d=NULL, centrotypes = "centroids",p=2,q=2)
+db$DB
+```
+
+# each cluster (row)
+```{r}
+clusterdf <- as.data.frame(clusterdf)
+cluster_num1 <- clusterdf[which(clusterdf$cluster=="1"), ]
+cluster_num2 <- clusterdf[which(clusterdf$cluster=="2"), ]
+cluster_num3 <- clusterdf[which(clusterdf$cluster=="3"), ]
+cluster_num4 <- clusterdf[which(clusterdf$cluster=="4"), ]
+cluster_num5 <- clusterdf[which(clusterdf$cluster=="5"), ]
+cluster_num6 <- clusterdf[which(clusterdf$cluster=="6"), ]
+```
+
+```{r}
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num1,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[1:10]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+
+```
+
+
+```{r}
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num2,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[1:10]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+
+```
+
+
+```{r}
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num3,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[1:10]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+
+```
+
+```{r}
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num4,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[1:10]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+
+```
+
+```{r}
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num5,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[1:10]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+
+```
+
+
+```{r}
+require(devtools)
+install_github("lchiffon/wordcloud2")
+frequency <- colSums(subset(cluster_num6,select=-c(cluster)))
+frequency <- sort(frequency,decreasing = TRUE)
+words <- names(frequency)
+words[1:10]
+wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+force = TRUE
+
+```
+
+
+# plot 
+```{r}
+# require(devtools)
+# install_github("lchiffon/wordcloud2")
+# frequency <- rowSums(cluster_num1)
+# frequency <- sort(frequency, decreasing=TRUE)
+# words <- names(frequency)
+# words[1:10]
+# wordcloud2(data = data.frame(words, frequency), gridSize=5, ellipticity=2)
+# force = TRUE
+```
+
+
+
+
+# save wordscloud2 pic
+```{r}
+# my_graph=wordcloud2(data = data.frame(words, frequency), gridSize=15, ellipticity=2)
+# saveWidget(my_graph,"tmp.html",selfcontained = F)
+# webshot("tmp.html","fig_1.pdf", delay =5, vwidth = 480, vheight=480)
+```
+
+
+
+
+
+
+

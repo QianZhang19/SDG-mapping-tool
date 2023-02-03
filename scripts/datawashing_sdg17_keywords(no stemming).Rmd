@@ -1,0 +1,46 @@
+---
+title: "Step1: DATA WASHING"
+author: "Qian"
+date: "09/07/2019"
+output: html_document
+---
+
+
+# get library
+```{r}
+library(dplyr)
+library(tidytext)
+library(stringr)
+library(pacman)
+data(stop_words)
+setwd("/Users/qianzhang/Desktop")
+
+# get the original data
+df <- read.csv("/Users/qianzhang/Desktop/Cs_keywords_final.txt", header=F, sep="\t", stringsAsFactors = F)
+tdf <- tibble(line=1:nrow(df), text=df$V1)
+
+# split sentences into token
+text_df <- tdf %>% unnest_tokens(word, text)
+# write.table(text_df,"hw1.txt",row.names = F, sep = "\t",col.names = F)
+# data washing
+## remove the punctuation
+punc_words <- tibble(word=c("{", "}", "(", ")", "[", "]", ".",
+                            "|", "&", "*", "/", "//", "#", "\\",
+                            "~", ",", ":", ";", "?", "!", "\"",
+                            "-", "--", "...", "||", "&&"))
+text_cm <- text_df %>% anti_join(punc_words)
+## turn uppercase into lowercase
+text_cm$word <- str_to_lower(text_cm$word)
+## transfer token into sentence
+text_res <- text_cm %>% group_by(line) %>% 
+  summarise(text=paste(word, collapse=" "))
+## save as .txt
+write.table(text_res, "CS.txt", row.names=F, sep="\t", col.names=F)
+```
+
+
+
+
+
+
+

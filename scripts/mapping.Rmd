@@ -1,0 +1,145 @@
+---
+title: "minimum distance measurement"
+author: "Qian"
+date: "20/09/2019"
+output: html_document
+---
+
+```{r}
+library(quanteda)
+library(tidyr)
+library(stringr)
+library(rword2vec)
+library(plyr)
+library(plotly)
+```
+
+```{r}
+# documents input
+sdg <- read.delim("KeywordsCs.txt", header=FALSE, col.names = "text",stringsAsFactors = F)
+doc <- read.delim("未命名 2.txt", header=FALSE, col.names = "text",stringsAsFactors = F)
+
+# name sdg and document
+namesdg <- paste0("sdg",1:dim(sdg)[1])
+namedoc_ <- paste0("doc_", 1:dim(doc)[1])
+```
+
+# creat a matrix and get mean
+```{r}
+# sdg and document combine 
+data <- rbind(sdg,doc)
+# dfm combination data
+corpdata <- corpus(data)
+dfmdata <- dfm(corpdata)
+meandata <- rowMeans(dfmdata)
+x <- meandata[1:dim(sdg)[1]]
+y <- meandata[(dim(sdg)[1]+1):dim(data)[1]]
+write.csv(dfmdata,"text_words_matrix.csv",sep=",",row.names=F,quote=F)
+```
+
+# text mean (training)
+```{r}
+dfmdata2 <- setDT(as.data.frame(dfmdata),keep.rownames = F,key=NULL,check.names=FALSE)[]
+text <-c(1:dim(dfmdata2)[1])
+#cluster = clusterdf2$cluster
+data2 <- data.frame(text,meandata)
+write.csv(data2,"mean_value.csv",sep=",",row.names=F,quote=F)
+```
+
+# 3D plot
+```{r}
+cosine_dist_mat <- as.matrix(dist(text_words_matrix),method = "euclidean")
+text_words_matrix <- read.csv("text_words_matrix.csv", row.names=1)
+cmd1=cmdscale(cosine_dist_mat,3) #3D
+
+p <- plot_ly(as.data.frame(cmd1), x = ~V1, y = ~V2, z = ~V3) %>%
+  add_markers() %>%
+  layout(scene = list(xaxis = list(title = '1'),
+                      yaxis = list(title = '2'),
+                      zaxis = list(title = '3')))
+htmlwidgets::saveWidget(as_widget(p), "test.html")
+```
+
+
+# covariance(mapping)
+```{r}
+a <- read.csv("mean_value.csv",header = TRUE)
+b <- read.csv("mean_value 2.csv",header = TRUE)
+a_ <- a[,-1]
+b_ <- b[,-1]
+
+mean_ <- merge(a_,b_)
+dist_ <- abs(mean_$a_-mean_$b_)
+distanc <- matrix(dist_,nrow = length(a_),ncol = length(b_))
+#write.csv (distance, file ="paper1.csv")
+
+```
+
+
+# distance(euclidean)
+```{r}
+mean <- merge(x,y)
+dist <- abs(mean$x-mean$y)
+distance <- matrix(dist,nrow = length(x),ncol = length(y))
+colnames(distance) <- namedoc_
+rownames(distance) <- namesdg
+write.csv (distance, file ="paper1.csv")
+```
+
+```{r}
+d <- data.frame(sdg=rep(row.names(distance),ncol(distance)),
+                doc_=rep(colnames(distance),each=nrow(distance)),
+                distance=as.vector(distance))
+aquantile <- quantile(distance, probs = seq(0,1,0.25))
+score <- 4
+for (i in 1:score){
+  d$score[distance >= aquantile[i]] <- i
+}
+#remove 3 4
+dt <- d[which(d$score %in% c(1,2)),]
+dt$sdg <- str_replace(dt$sdg,"_distance","")
+write.csv (dt, file ="paper2.csv")
+#write.csv(d, file ="score.csv")
+```
+
+```{r}
+##document list for every sdg
+dt$sdg <- as.character(dt$sdg)
+dt$doc_ <- as.character(dt$doc_)
+sdgcount <- seq(1:dim(sdg)[1])
+i = 1
+cache <- list()
+for (i in sdgcount){
+ cache[[i]] <- dt$doc_[which(dt$sdg == paste0("sdg",i))]
+}
+
+  
+u=rbind.fill(
+  data.frame(t(data.frame(cache[1]))),
+  data.frame(t(data.frame(cache[2]))),
+  data.frame(t(data.frame(cache[3]))),
+  data.frame(t(data.frame(cache[4]))),
+  data.frame(t(data.frame(cache[5]))),
+  data.frame(t(data.frame(cache[6]))),
+  data.frame(t(data.frame(cache[7]))),
+  data.frame(t(data.frame(cache[8]))),
+  data.frame(t(data.frame(cache[9]))),
+  data.frame(t(data.frame(cache[10]))),
+  data.frame(t(data.frame(cache[11]))),
+  data.frame(t(data.frame(cache[12]))),
+  data.frame(t(data.frame(cache[13]))),
+  data.frame(t(data.frame(cache[14]))),
+  data.frame(t(data.frame(cache[15]))),
+  data.frame(t(data.frame(cache[16]))),
+  data.frame(t(data.frame(cache[17]))))
+
+u_ <- t(u)
+write.csv (u_, file ="paper3.csv", col.names = paste0("sdg",2:dim(sdg)[1]))
+```
+
+
+
+
+
+
+
