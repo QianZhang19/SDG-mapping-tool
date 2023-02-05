@@ -80,7 +80,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 ## Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+Your Name - [@QianZhang] - qianzhang019@gamil.com
 
 Project Link: [https://github.com/QianZhang19/SDG-mapping-tool](https://github.com/QianZhang19/SDG-mapping-tool)
 
