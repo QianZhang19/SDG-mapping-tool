@@ -60,7 +60,7 @@ The SDG (Sustainable Development Goals) mapping tool is a tool used to track and
 - Distance measurement between each SDG and each document
   
 - Selection of the closer distance as mapping results
-- 
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
