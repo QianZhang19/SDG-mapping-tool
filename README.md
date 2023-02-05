@@ -8,33 +8,6 @@
 <h3 align="center">SDG Mapping Tool</h3>
 </div>
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
-
-<!-- ABOUT THE PROJECT -->
 ## About The Project
 
 The SDG (Sustainable Development Goals) mapping tool is a tool used to track and monitor the progress of the 17 SDGs set by the United Nations. The tool helps organizations and governments understand how their actions and initiatives align with the SDGs and identifies areas where they can make a greater impact
@@ -48,7 +21,6 @@ The SDG (Sustainable Development Goals) mapping tool is a tool used to track and
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- GETTING STARTED -->
 ## Getting Started
 
 1. Install R and R Studio
@@ -62,9 +34,7 @@ The SDG (Sustainable Development Goals) mapping tool is a tool used to track and
    ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 ## Usage
-
 * Alignment assessment: The tool helps organizations understand how their actions and initiatives align with the SDGs and identifies areas where they can make a greater impact.
 
 * Stakeholder engagement: The tool can be used to engage stakeholders and gather data on the organization's impact on the SDGs.
@@ -77,24 +47,20 @@ The SDG (Sustainable Development Goals) mapping tool is a tool used to track and
 
 * Decision-making: The tool provides data that can be used to inform decision-making processes related to sustainability and the SDGs.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
-
-Screenshot 2023-02-05 at 11.52.10.png
-
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- CONTRIBUTING -->
+- Data washing for the input documents (retain the main words in each document)
+  
+- Collection of the corpus for the words include the keywords of SDGs and each main word in the documents
+  
+- Creation of the matrix for the corpus and the input documents (rows of the matrix are documents and each SDG; columns of the matrix is words of them)
+  
+- Calculation of the mean value for each row (get the centre of the input document)
+  
+- Distance measurement between each SDG and each document
+  
+- Selection of the closer distance as mapping results
+- 
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -108,36 +74,18 @@ Don't forget to give the project a star! Thanks again!
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- LICENSE -->
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- CONTACT -->
 ## Contact
 
 Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
 
-Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
+Project Link: [https://github.com/QianZhang19/SDG-mapping-tool](https://github.com/QianZhang19/SDG-mapping-tool)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
-* []()
-* []()
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
+* Professor Jeremy Levesley
+* Dr Seyedeh Zahra Rezaei Lalami	
+* Ms Asha Mistry
