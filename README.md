@@ -1,273 +1,143 @@
-# SDG-mapping-tool
-Explore keywords from texts by K-means Cluster and calculate by Sum of Square Error(SSE) to label each of Sustainable Development Goals for prediction and classification 
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/QianZhang19/SDG-mapping-tool">
+    <img src="pics/cloudword.png" alt="Logo" width="80" height="80">
+  </a>
 
+<h3 align="center">SDG Mapping Tool</h3>
+</div>
 
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
+The SDG (Sustainable Development Goals) mapping tool is a tool used to track and monitor the progress of the 17 SDGs set by the United Nations. The tool helps organizations and governments understand how their actions and initiatives align with the SDGs and identifies areas where they can make a greater impact
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+### Built With
 
+* R
+* R Studio
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## About the Project
-
-* This software is used to control the flow of planes at an airport
-* This project is one of the Digital Futures Academy Challenges
-* This project approach - Test-driven development
-
-
-
-## Built With
-* [![Laravel][Laravel.com]][Laravel-url]
-
-
+<!-- GETTING STARTED -->
 ## Getting Started
 
-### How can the viewer set up the project locally?
-* Fork this repo, and clone to your local machine
-* npm install to install project dependencies
-* Convert stories into a representative domain model and test-drive your work.
-* Run your tests using npm test or node specRunner.js
+1. Install R and R Studio
+2. Clone the repo
+   ```sh
+   git clone https://github.com/QianZhang19/SDG-mapping-tool.git
+   ```
+3. Install libraries
+   ```sh
+   install.packages("PACKAGENAME")
+   ```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Project Structure
-* src folder
-1. airport.js
-2. plane.js
-   
-* test folder
-1. airport.spec.js
-2. testing-framework.js
 
-## Problem Statements
+## Usage
 
-We have a request from a client to write the software to control the flow of planes at an airport. The planes can land and take off provided that the weather is sunny. Occasionally it may be stormy, in which case no planes can land or take off.
+* Alignment assessment: The tool helps organizations understand how their actions and initiatives align with the SDGs and identifies areas where they can make a greater impact.
 
-### User Stories
+* Stakeholder engagement: The tool can be used to engage stakeholders and gather data on the organization's impact on the SDGs.
 
-```
-As an air traffic controller
-So I can get passengers to a destination
-I want to instruct the airport to land a plane
+* Progress tracking: The tool helps organizations track their progress towards achieving the SDGs and identify areas for improvement.
 
-As the system designer
-So that the software can be used for many different airports
-I would like a default airport capacity that can be overridden as appropriate
+* Reporting: The tool can be used to generate sustainability reports that communicate an organization's impact on the SDGs to stakeholders.
 
-As an air traffic controller
-To ensure safety
-I want to prevent landing when the airport is full
+* Collaboration: The tool can be used to identify opportunities for collaboration with other organizations and stakeholders to achieve the SDGs.
 
-As an air traffic controller
-So I can get passengers on the way to their destination
-I want to instruct the airport to let a plane take off and confirm that it is no longer in the airport
+* Decision-making: The tool provides data that can be used to inform decision-making processes related to sustainability and the SDGs.
 
-As an air traffic controller
-To avoid confusion
-I want to prevent asking the airport to let planes take-off which are not at the airport, or land a plane that's already landed
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-As an air traffic controller
-To ensure safety
-I want to prevent takeoff when weather is stormy
+<!-- ROADMAP -->
+## Roadmap
 
-As an air traffic controller
-To ensure safety
-I want to prevent landing when weather is stormy
+- [ ] Feature 1
+- [ ] Feature 2
+- [ ] Feature 3
+    - [ ] Nested Feature
 
-As an air traffic controller
-To count planes easily
-Planes that have landed must be at an airport
-```
+Screenshot 2023-02-05 at 11.52.10.png
 
-## Domain Models
 
-### User Story 1
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```
-As an air traffic controller
-So I can get passengers to a destination
-I want to instruct the airport to land a plane
-```
 
-#### Domain Model
 
-| Objects | Properties                  | Messages     | Output |
-| ------- | --------------------------- | ------------ | ------ |
-| Airport | airportPlanes@Array[@plane] | land(@plane) | @void  |
-| Plane   | planeID@Plane               | land()       | @void  |
+<!-- CONTRIBUTING -->
+## Contributing
 
-#### Tests
-1. Test if a plane is landed at the airport when land is called with plane
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
----
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
 
-## User Story 2
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-```
-As the system designer
-So that the software can be used for many different airports
-I would like a default airport capacity that can be overridden as appropriate
-```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-#### Domain Model
 
-| Objects | Properties                  | Messages             | Output |
-| ------- | --------------------------- | -------------------- | ------ |
-| Airport | airportPlanes@Array[@plane] | setCapacity(@number) | @void  |
 
-#### Tests
-1. Test if a default airport capacity can be overridden as appropriate
+<!-- LICENSE -->
+## License
 
----
+Distributed under the MIT License. See `LICENSE.txt` for more information.
 
-## User Story 3
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```
-As an air traffic controller
-To ensure safety
-I want to prevent landing when the airport is full
-```
 
-#### Domain Model
 
-| Objects | Properties                  | Messages | Output   |
-| ------- | --------------------------- | -------- | -------- |
-| Airport | airportPlanes@Array[@plane] | isFull() | @Boolean |
-| Plane   | planeID@Plane               | isFull() | @Boolean |
+<!-- CONTACT -->
+## Contact
 
-#### Tests
-1. Test if the plane landing is prevented when the airport is full
+Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
 
----
+Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
 
-## User Story 4
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```
-As an air traffic controller
-So I can get passengers on the way to their destination
-I want to instruct the airport to let a plane take off and confirm that it is no longer in the airport
-```
 
-#### Domain Model
 
-| Objects | Properties                  | Messages               | Output   |
-| ------- | --------------------------- | ---------------------- | -------- |
-| Airport | airportPlanes@Array[@plane] | send(@plane)           | @void    |
-|         |                             | takeoffConfirm(@plane) | @Boolean |
-| Plane   | planeID@Plane               | send()                 | @void    |
-|         |                             | takeoffConfirm()       | @Boolean |
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
 
-#### Tests
-1. Test if the plane is taken off from the airport when send is called
-2. Test the confirmation is given when the plane has been taken off
+* []()
+* []()
+* []()
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## User Story 5
-
-```
-As an air traffic controller
-To avoid confusion
-I want to prevent asking the airport to let planes take-off which are not at the airport, or land a plane that's already landed
-```
-
-#### Domain Model
-
-| Objects | Properties                  | Messages           | Output   |
-| ------- | --------------------------- | ------------------ | -------- |
-| Airport | airportPlanes@Array[@plane] | planeHasTakenOff() | @Boolean |
-|         |                             | planeHasLanded()   | @Boolean |
-|         |                             |                    |          |
-| Plane   | planeID@Plane               | planeHasTakenOff() | @Boolean |
-|         |                             | planeHasLanded()   | @Boolean |
-
-#### Tests
-1. Test if prevent letting a plane take off when they are not at the airport
-2. Test if prevent landing a plane when that's already landed
-
----
-
-## User Story 6
-
-```
-As an air traffic controller
-To ensure safety
-I want to prevent takeoff when weather is stormy
-```
-
-#### Domain Model
-
-| Objects | Properties                  | Messages           | Output   |
-| ------- | --------------------------- | ------------------ | -------- |
-| Airport | airportPlanes@Array[@plane] | stormyTakeOff()    | @Boolean |
-| Plane   | planeID@Plane               | stormyTakeOff()    | @Boolean |
-| Weather | Weather@stormy              | weathergenerator() | @Boolean |
-|         |                             | stormyTakeOff()    | @Boolean |
-
-#### Tests
-1. Test if prevent takeoff when weather is stormy
-
----
-
-## User Story 7
-
-```
-As an air traffic controller
-To ensure safety
-I want to prevent landing when weather is stormy
-```
-
-#### Domain Model
-
-| Objects | Properties                  | Messages           | Output   |
-| ------- | --------------------------- | ------------------ | -------- |
-| Airport | airportPlanes@Array[@plane] | stormyLand()       | @Boolean |
-| Plane   | planeID@Plane               | stormyLand()       | @Boolean |
-| Weather | Weather@stormy              | weathergenerator() | @Boolean |
-|         |                             | stormyLand()       | @Boolean |
-
-#### Tests
-1. Test if prevent landing when weather is stormy
-
----
-
-## User Story 8
-
-```
-As an air traffic controller
-To count planes easily
-Planes that have landed must be at an airport
-```
-
-#### Domain Model
-
-| Objects | Properties                  | Messages         | Output   |
-| ------- | --------------------------- | ---------------- | -------- |
-| Airport | airportPlanes@Array[@plane] | countAirplanes() | @Boolean |
-| Plane   | planeID@Plane               | countAirplanes() | @number  |
-
-#### Tests
-1. Test if planes that have landed at an airport
-
-## Project Review and Roadmap
-
-### What were your main takeaways from this project?
-
-* I have learned to create user stories and build domain models for each user story. This helps me know what the client's requirements for the application are and what I need to develop and test for each requirement(user story)
-* I also have learned TDD development
-* I obtained the testing-framework.js
-
-### What would you do differently if you were to approach this again?
-
-* I would think about decoupling and encapsulation
-* I would think about creating each class for each object which could make the story more readable
-
-### Where could this project go next?
-
-* I would consider more weather condition
-* I would set the airport capacity at the start, e.g. if the airport capacity is zero, then no need for the next steps
-* I would create an object for the air traffic controller
-
-## Acknowledgements
-
-* Digital Futures Academy
-  
