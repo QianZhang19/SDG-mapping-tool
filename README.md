@@ -30,10 +30,18 @@ The SDG (Sustainable Development Goals) mapping tool is a tool used to track and
    ```
 3. Install libraries
    ```sh
-   install.packages("PACKAGENAME")
+   install.packages("packName")
    ```
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
+4. Input trained SDGs keywords
+   ```sh
+   sdg <- read.delim("Trained keywords", header = FALSE, col.names = "text", stringsAsFactors = F)
+   # trained keywords is from data/processed/New_SDG Keywords 2.1. it should be converted into txt format
+   ```
+5. Input your document of mapping the keywords
+   ```sh
+   df <- read_excel("yourDoc.xlsx", col_names = F, range = cell_cols("E:E"))
+   # this document is in excel, but the original document can be in different formats
+   ```
 ## Usage
 * Alignment assessment: The tool helps organizations understand how their actions and initiatives align with the SDGs and identifies areas where they can make a greater impact.
 
@@ -60,7 +68,7 @@ The SDG (Sustainable Development Goals) mapping tool is a tool used to track and
 - Distance measurement between each SDG and each document
   
 - Selection of the closer distance as mapping results
-- 
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
